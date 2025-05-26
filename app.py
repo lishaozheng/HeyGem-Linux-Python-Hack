@@ -16,7 +16,6 @@ from functools import partial
 
 import cv2
 import gradio as gr
-from flask import Flask, request
 
 import service.trans_dh_service
 from h_utils.custom import CustomError
@@ -171,6 +170,10 @@ class VideoProcessor:
         while not self.is_initialized:
             logger.info("服务尚未完成初始化，等待 1 秒...")
             time.sleep(1)
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        subprocess.call(['chmod', '755', current_dir])
+
         work_id = str(uuid.uuid1())
         code = work_id
         temp_dir = os.path.join(GlobalConfig.instance().temp_dir, work_id)
@@ -179,6 +182,9 @@ class VideoProcessor:
         final_result = None
 
         try:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            os.system(f"chmod 755 {current_dir}")
+
             cap = cv2.VideoCapture(video_file)
             width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -189,7 +195,7 @@ class VideoProcessor:
             video_path = video_file
 
             self.task.task_dic[code] = ""
-            self.task.work(audio_path, video_path, code, 0, 0, 0, 0)
+            self.task.work(audio_path, video_path, code, 0, 0, 0, 1)
 
             result_path = self.task.task_dic[code][2]
             final_result_dir = os.path.join("result", code)
@@ -209,6 +215,13 @@ class VideoProcessor:
 
 
 if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    os.system(f"chmod 755 {current_dir}")
+    import torch
+    #
+    print(torch.cuda.is_available())  # True 表示可以用 GPU
+    print(torch.cuda.current_device())  # 当前 GPU 的编号
+    print(torch.cuda.get_device_name(0))  # 显示 GPU 名称
     processor = VideoProcessor()
 
     inputs = [
@@ -227,4 +240,4 @@ if __name__ == "__main__":
         title=title,
         description=description,
     )
-    demo.queue().launch()
+    demo.queue().launch(show_error=True)
